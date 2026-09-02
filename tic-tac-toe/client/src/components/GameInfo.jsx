@@ -8,44 +8,37 @@ const GameInfo = ({
     result
 }) => {
 
-    const opponent =
-        players.find(
-            (player) =>
-                player.symbol !== symbol
-        );
+    const opponent = players.find(
+        (player) => player.symbol !== symbol
+    );
 
     let message = "";
 
     if (players.length < 2) {
 
-        message =
-            "Waiting for another player...";
+        message = "Waiting for another player...";
 
     } else if (result === "winner") {
 
-        const winnerPlayer =
-            players.find(
-                (player) =>
-                    player.symbol === winner
-            );
+        const winnerPlayer = players.find(
+            (player) => player.symbol === winner
+        );
 
-        if (
-            winnerPlayer?.username ===
-            username
-        ) {
+        if (winnerPlayer?.username === username) {
+
             message = "🎉 You Won!";
+
         } else {
+
             message =
-                ` ${winnerPlayer?.username || "Opponent"} Won!`;
+                `🔴 ${winnerPlayer?.username || "Opponent"} Won!`;
         }
 
     } else if (result === "draw") {
 
-        message = " It's a Draw!";
+        message = "🤝 It's a Draw!";
 
-    } else if (
-        currentPlayer === symbol
-    ) {
+    } else if (currentPlayer === symbol) {
 
         message = "🟢 Your Turn";
 
@@ -73,15 +66,11 @@ const GameInfo = ({
                 >
                     <strong>
                         {players.find(
-                            (player) =>
-                                player.symbol === "X"
-                        )?.username ||
-                            "Waiting..."}
+                            (player) => player.symbol === "X"
+                        )?.username || "Waiting..."}
                     </strong>
 
-                    <span>
-                        X
-                    </span>
+                    <span>X</span>
                 </div>
 
                 <div
@@ -93,15 +82,11 @@ const GameInfo = ({
                 >
                     <strong>
                         {players.find(
-                            (player) =>
-                                player.symbol === "O"
-                        )?.username ||
-                            "Waiting..."}
+                            (player) => player.symbol === "O"
+                        )?.username || "Waiting..."}
                     </strong>
 
-                    <span>
-                        O
-                    </span>
+                    <span>O</span>
                 </div>
 
             </div>

@@ -3,186 +3,232 @@ import { useEffect, useState } from "react";
 import socket from "./socket";
 
 import Board from "./components/Board";
-
 import GameInfo from "./components/GameInfo";
 
 import "./App.css";
 
 function App() {
 
-    const [username, setUsername] =
-        useState("");
+    const [username, setUsername] = useState("");
+    const [roomId, setRoomId] = useState("");
+    const [joined, setJoined] = useState(false);
 
-    const [roomId, setRoomId] =
-        useState("");
+    const [symbol, setSymbol] = useState("");
 
-    const [joined, setJoined] =
-        useState(false);
+    const [board, setBoard] = useState([
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        ""
+    ]);
 
-    const [symbol, setSymbol] =
-        useState("");
+    const [currentPlayer, setCurrentPlayer] = useState("X");
 
-    const [board, setBoard] =
-        useState([
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            "",
-            ""
-        ]);
+    const [players, setPlayers] = useState([]);
 
-    const [currentPlayer, setCurrentPlayer] =
-        useState("X");
+    const [winner, setWinner] = useState(null);
 
-    const [players, setPlayers] =
-        useState([]);
+    const [result, setResult] = useState("playing");
 
-    const [winner, setWinner] =
-        useState(null);
+    const [message, setMessage] = useState("");
 
-    const [result, setResult] =
-        useState("playing");
-
-    const [message, setMessage] =
-        useState("");
 
     useEffect(() => {
 
-     
+        // Player assigned
+        const handlePlayerAssigned = (data) => {
+
+            console.log("Player assigned:", data);
+
+            setSymbol(data.symbol);
+            setUsername(data.username);
+            setRoomId(data.roomId);
+            setJoined(true);
+            setMessage("");
+        };
+
+
+        // Game update
+        const handleGameUpdate = (data) => {
+
+            console.log("Game update:", data);
+
+            setBoard(data.board);
+
+            setCurrentPlayer(data.currentPlayer);
+
+            setWinner(data.winner);
+
+            setResult(data.result);
+
+            setPlayers(data.players);
+        };
+
+
+        // Room full
+        const handleRoomFull = () => {
+
+            setMessage(
+                "This room is full. Only 2 players are allowed."
+            );
+        };
+
+
+        // Join error
+        const handleJoinError = (data) => {
+
+            console.log("Join error:", data);
+
+            setMessage(data.message);
+        };
+
+
+        // Game message
+        const handleGameMessage = (data) => {
+
+            console.log("Game message:", data);
+
+            setMessage(data.message);
+        };
+
+
+        // Player left
+        const handlePlayerLeft = (data) => {
+
+            console.log("Player left:", data);
+
+            setMessage(data.message);
+
+            setPlayers([]);
+        };
+
+
+        // Socket connected
+        const handleConnect = () => {
+
+            console.log(
+                "Connected to server:",
+                socket.id
+            );
+        };
+
+
+        // Socket disconnected
+        const handleDisconnect = () => {
+
+            console.log("Disconnected from server");
+
+            setMessage(
+                "Connection lost. Reconnecting..."
+            );
+        };
+
+
         socket.on(
             "playerAssigned",
-            (data) => {
-
-                setSymbol(
-                    data.symbol
-                );
-
-                setUsername(
-                    data.username
-                );
-
-                setRoomId(
-                    data.roomId
-                );
-
-                setJoined(true);
-            }
+            handlePlayerAssigned
         );
 
         socket.on(
             "gameUpdate",
-            (data) => {
-
-                setBoard(
-                    data.board
-                );
-
-                setCurrentPlayer(
-                    data.currentPlayer
-                );
-
-                setWinner(
-                    data.winner
-                );
-
-                setResult(
-                    data.result
-                );
-
-                setPlayers(
-                    data.players
-                );
-            }
+            handleGameUpdate
         );
-
 
         socket.on(
             "roomFull",
-            () => {
-
-                setMessage(
-                    "This room is full. Only 2 players are allowed."
-                );
-            }
+            handleRoomFull
         );
-
 
         socket.on(
             "joinError",
-            (data) => {
-
-                setMessage(
-                    data.message
-                );
-            }
+            handleJoinError
         );
 
-  
         socket.on(
             "gameMessage",
-            (data) => {
-
-                setMessage(
-                    data.message
-                );
-            }
+            handleGameMessage
         );
 
- 
         socket.on(
             "playerLeft",
-            (data) => {
-
-                setMessage(
-                    data.message
-                );
-
-                setPlayers(
-                    []
-                );
-            }
+            handlePlayerLeft
         );
+
+        socket.on(
+            "connect",
+            handleConnect
+        );
+
+        socket.on(
+            "disconnect",
+            handleDisconnect
+        );
+
 
         return () => {
 
             socket.off(
-                "playerAssigned"
+                "playerAssigned",
+                handlePlayerAssigned
             );
 
             socket.off(
-                "gameUpdate"
+                "gameUpdate",
+                handleGameUpdate
             );
 
             socket.off(
-                "roomFull"
+                "roomFull",
+                handleRoomFull
             );
 
             socket.off(
-                "joinError"
+                "joinError",
+                handleJoinError
             );
 
             socket.off(
-                "gameMessage"
+                "gameMessage",
+                handleGameMessage
             );
 
             socket.off(
-                "playerLeft"
+                "playerLeft",
+                handlePlayerLeft
+            );
+
+            socket.off(
+                "connect",
+                handleConnect
+            );
+
+            socket.off(
+                "disconnect",
+                handleDisconnect
             );
         };
 
     }, []);
 
+
     const joinGame = (event) => {
 
         event.preventDefault();
 
+        const cleanUsername =
+            username.trim();
+
+        const cleanRoomId =
+            roomId.trim();
+
+
         if (
-            !username.trim() ||
-            !roomId.trim()
+            !cleanUsername ||
+            !cleanRoomId
         ) {
 
             setMessage(
@@ -192,58 +238,98 @@ function App() {
             return;
         }
 
+
         setMessage("");
+
 
         socket.emit(
             "joinGame",
             {
-                username:
-                    username.trim(),
-
-                roomId:
-                    roomId.trim()
+                username: cleanUsername,
+                roomId: cleanRoomId
             }
         );
     };
 
+
     const makeMove = (index) => {
+
+        console.log(
+            "Trying to make move:",
+            {
+                index,
+                symbol,
+                currentPlayer,
+                roomId
+            }
+        );
+
 
         if (!joined) {
             return;
         }
 
+
         if (players.length < 2) {
+
+            setMessage(
+                "Waiting for another player..."
+            );
+
             return;
         }
 
-        if (winner || result === "draw") {
+
+        if (winner) {
             return;
         }
 
-        if (
-            currentPlayer !== symbol
-        ) {
+
+        if (result === "draw") {
             return;
         }
+
+
+        if (currentPlayer !== symbol) {
+
+            setMessage(
+                "It's not your turn"
+            );
+
+            return;
+        }
+
 
         if (board[index] !== "") {
+
+            setMessage(
+                "This cell is already occupied"
+            );
+
             return;
         }
+
+
+        setMessage("");
+
 
         socket.emit(
             "makeMove",
             {
-                roomId,
-                index
+                roomId: roomId,
+                index: index
             }
         );
     };
+
 
     const resetPage = () => {
 
         window.location.reload();
     };
 
+
+    // JOIN SCREEN
     if (!joined) {
 
         return (
@@ -258,6 +344,7 @@ function App() {
                     <p>
                         Multiplayer Online Game
                     </p>
+
 
                     <form
                         onSubmit={joinGame}
@@ -275,6 +362,7 @@ function App() {
                             maxLength={20}
                         />
 
+
                         <input
                             type="text"
                             placeholder="Enter Room ID"
@@ -287,6 +375,7 @@ function App() {
                             maxLength={30}
                         />
 
+
                         <button
                             type="submit"
                         >
@@ -295,11 +384,13 @@ function App() {
 
                     </form>
 
+
                     {message && (
                         <p className="error">
                             {message}
                         </p>
                     )}
+
 
                     <div className="instructions">
 
@@ -323,6 +414,8 @@ function App() {
         );
     }
 
+
+    // GAME SCREEN
     return (
         <div className="app">
 
@@ -332,28 +425,30 @@ function App() {
                     🎮 Tic Tac Toe
                 </h1>
 
+
                 <GameInfo
                     username={username}
                     symbol={symbol}
                     roomId={roomId}
-                    currentPlayer={
-                        currentPlayer
-                    }
+                    currentPlayer={currentPlayer}
                     players={players}
                     winner={winner}
                     result={result}
                 />
+
 
                 <Board
                     board={board}
                     onCellClick={makeMove}
                 />
 
+
                 {message && (
                     <p className="game-message">
                         {message}
                     </p>
                 )}
+
 
                 {(winner ||
                     result === "draw") && (

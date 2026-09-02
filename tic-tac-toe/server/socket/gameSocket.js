@@ -14,7 +14,9 @@ const winningCombinations = [
 ];
 
 const checkWinner = (board) => {
+
     for (const combination of winningCombinations) {
+
         const [a, b, c] = combination;
 
         if (
@@ -29,12 +31,19 @@ const checkWinner = (board) => {
     return null;
 };
 
+
 const checkDraw = (board) => {
-    return board.every((cell) => cell !== "");
+
+    return board.every(
+        (cell) => cell !== ""
+    );
 };
 
+
 const saveGame = async (roomId, room) => {
+
     try {
+
         const playerX = room.players.find(
             (player) => player.symbol === "X"
         );
@@ -48,6 +57,7 @@ const saveGame = async (roomId, room) => {
         }
 
         await Game.create({
+
             roomId: roomId,
 
             playerX: playerX.username,
@@ -65,9 +75,12 @@ const saveGame = async (roomId, room) => {
                 : "draw"
         });
 
-        console.log("Game saved to MongoDB");
+        console.log(
+            "Game saved to MongoDB"
+        );
 
     } catch (error) {
+
         console.log(
             "Error saving game:",
             error.message
@@ -75,22 +88,42 @@ const saveGame = async (roomId, room) => {
     }
 };
 
-const sendGameUpdate = (io, roomId, room, result = "playing") => {
-    io.to(roomId).emit("gameUpdate", {
-        board: room.board,
 
-        currentPlayer: room.currentPlayer,
+const sendGameUpdate = (
+    io,
+    roomId,
+    room,
+    result = "playing"
+) => {
 
-        winner: room.winner,
+    io.to(roomId).emit(
+        "gameUpdate",
+        {
+            board: room.board,
 
-        result: result,
+            currentPlayer:
+                room.currentPlayer,
 
-        players: room.players.map((player) => ({
-            username: player.username,
-            symbol: player.symbol
-        }))
-    });
+            winner:
+                room.winner,
+
+            result:
+                result,
+
+            players:
+                room.players.map(
+                    (player) => ({
+                        username:
+                            player.username,
+
+                        symbol:
+                            player.symbol
+                    })
+                )
+        }
+    );
 };
+
 
 const setupGameSocket = (io) => {
 
@@ -101,19 +134,28 @@ const setupGameSocket = (io) => {
             socket.id
         );
 
-  
+
+        // =========================
+        // JOIN GAME
+        // =========================
+
         socket.on(
             "joinGame",
             ({ roomId, username }) => {
 
                 if (!roomId || !username) {
-                    socket.emit("joinError", {
-                        message:
-                            "Username and Room ID are required"
-                    });
+
+                    socket.emit(
+                        "joinError",
+                        {
+                            message:
+                                "Username and Room ID are required"
+                        }
+                    );
 
                     return;
                 }
+
 
                 const cleanRoomId =
                     roomId.trim();
@@ -121,23 +163,32 @@ const setupGameSocket = (io) => {
                 const cleanUsername =
                     username.trim();
 
-                if (!cleanRoomId || !cleanUsername) {
-                    socket.emit("joinError", {
-                        message:
-                            "Username and Room ID are required"
-                    });
+
+                if (
+                    !cleanRoomId ||
+                    !cleanUsername
+                ) {
+
+                    socket.emit(
+                        "joinError",
+                        {
+                            message:
+                                "Username and Room ID are required"
+                        }
+                    );
 
                     return;
                 }
 
 
+                // Create room if it doesn't exist
                 if (!rooms[cleanRoomId]) {
 
                     rooms[cleanRoomId] = {
+
                         players: [],
 
                         board: [
-                            "",
                             "",
                             "",
                             "",
@@ -154,56 +205,89 @@ const setupGameSocket = (io) => {
                     };
                 }
 
+
                 const room =
                     rooms[cleanRoomId];
 
 
-                if (room.players.length >= 2) {
+                // Maximum 2 players
+                if (
+                    room.players.length >= 2
+                ) {
 
-                    socket.emit("roomFull");
+                    socket.emit(
+                        "roomFull"
+                    );
 
                     return;
                 }
 
+
+                // Check duplicate username
                 const usernameExists =
                     room.players.some(
                         (player) =>
-                            player.username.toLowerCase() ===
-                            cleanUsername.toLowerCase()
+                            player.username
+                                .toLowerCase() ===
+                            cleanUsername
+                                .toLowerCase()
                     );
+
 
                 if (usernameExists) {
 
-                    socket.emit("joinError", {
-                        message:
-                            "Username is already taken in this room"
-                    });
+                    socket.emit(
+                        "joinError",
+                        {
+                            message:
+                                "Username is already taken in this room"
+                        }
+                    );
 
                     return;
                 }
 
+
+                // Assign X to first player
+                // Assign O to second player
                 const symbol =
                     room.players.length === 0
                         ? "X"
                         : "O";
 
+
                 const player = {
-                    socketId: socket.id,
 
-                    username: cleanUsername,
+                    socketId:
+                        socket.id,
 
-                    symbol: symbol
+                    username:
+                        cleanUsername,
+
+                    symbol:
+                        symbol
                 };
 
-                room.players.push(player);
 
-                socket.join(cleanRoomId);
+                room.players.push(
+                    player
+                );
 
-                socket.roomId = cleanRoomId;
 
-                socket.symbol = symbol;
+                socket.join(
+                    cleanRoomId
+                );
 
-                socket.username = cleanUsername;
+
+                // Store room information
+                socket.roomId =
+                    cleanRoomId;
+
+                socket.username =
+                    cleanUsername;
+
+                socket.symbol =
+                    symbol;
 
 
                 socket.emit(
@@ -212,12 +296,14 @@ const setupGameSocket = (io) => {
                         username:
                             cleanUsername,
 
-                        symbol: symbol,
+                        symbol:
+                            symbol,
 
                         roomId:
                             cleanRoomId
                     }
                 );
+
 
                 sendGameUpdate(
                     io,
@@ -226,11 +312,17 @@ const setupGameSocket = (io) => {
                     "playing"
                 );
 
+
                 console.log(
                     `${cleanUsername} joined room ${cleanRoomId} as ${symbol}`
                 );
             }
         );
+
+
+        // =========================
+        // MAKE MOVE
+        // =========================
 
         socket.on(
             "makeMove",
@@ -239,12 +331,39 @@ const setupGameSocket = (io) => {
                 const room =
                     rooms[roomId];
 
+
                 if (!room) {
                     return;
                 }
 
-     
-                if (room.players.length < 2) {
+
+                // Find player from room
+                const player =
+                    room.players.find(
+                        (p) =>
+                            p.socketId ===
+                            socket.id
+                    );
+
+
+                if (!player) {
+
+                    socket.emit(
+                        "gameMessage",
+                        {
+                            message:
+                                "You are not connected to this room."
+                        }
+                    );
+
+                    return;
+                }
+
+
+                // Need two players
+                if (
+                    room.players.length < 2
+                ) {
 
                     socket.emit(
                         "gameMessage",
@@ -257,15 +376,17 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
-  
+
+                // Game already won
                 if (room.winner) {
                     return;
                 }
 
 
+                // Check whose turn
                 if (
                     room.currentPlayer !==
-                    socket.symbol
+                    player.symbol
                 ) {
 
                     socket.emit(
@@ -280,6 +401,7 @@ const setupGameSocket = (io) => {
                 }
 
 
+                // Validate index
                 if (
                     index < 0 ||
                     index > 8 ||
@@ -289,21 +411,29 @@ const setupGameSocket = (io) => {
                 }
 
 
+                // Make move
                 room.board[index] =
-                    socket.symbol;
+                    player.symbol;
 
 
+                // Check winner
                 const winner =
-                    checkWinner(room.board);
+                    checkWinner(
+                        room.board
+                    );
+
 
                 if (winner) {
 
-                    room.winner = winner;
+                    room.winner =
+                        winner;
+
 
                     await saveGame(
                         roomId,
                         room
                     );
+
 
                     sendGameUpdate(
                         io,
@@ -316,12 +446,18 @@ const setupGameSocket = (io) => {
                 }
 
 
-                if (checkDraw(room.board)) {
+                // Check draw
+                if (
+                    checkDraw(
+                        room.board
+                    )
+                ) {
 
                     await saveGame(
                         roomId,
                         room
                     );
+
 
                     sendGameUpdate(
                         io,
@@ -333,10 +469,13 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
+
+                // Change turn
                 room.currentPlayer =
                     room.currentPlayer === "X"
                         ? "O"
                         : "X";
+
 
                 sendGameUpdate(
                     io,
@@ -347,52 +486,72 @@ const setupGameSocket = (io) => {
             }
         );
 
-        socket.on("disconnect", () => {
 
-            console.log(
-                "User disconnected:",
-                socket.id
-            );
+        // =========================
+        // DISCONNECT
+        // =========================
 
-            const roomId =
-                socket.roomId;
-
-            if (
-                !roomId ||
-                !rooms[roomId]
-            ) {
-                return;
-            }
-
-            const room =
-                rooms[roomId];
-
-            room.players =
-                room.players.filter(
-                    (player) =>
-                        player.socketId !==
-                        socket.id
-                );
-
-            io.to(roomId).emit(
-                "playerLeft",
-                {
-                    message:
-                        `${socket.username || "A player"} left the game`
-                }
-            );
-
-            if (
-                room.players.length === 0
-            ) {
-                delete rooms[roomId];
+        socket.on(
+            "disconnect",
+            () => {
 
                 console.log(
-                    `Room ${roomId} deleted`
+                    "User disconnected:",
+                    socket.id
                 );
+
+
+                const roomId =
+                    socket.roomId;
+
+
+                if (
+                    !roomId ||
+                    !rooms[roomId]
+                ) {
+                    return;
+                }
+
+
+                const room =
+                    rooms[roomId];
+
+
+                // Remove player
+                room.players =
+                    room.players.filter(
+                        (player) =>
+                            player.socketId !==
+                            socket.id
+                    );
+
+
+                io.to(roomId).emit(
+                    "playerLeft",
+                    {
+                        message:
+                            `${socket.username || "A player"} left the game`
+                    }
+                );
+
+
+                // Delete empty room
+                if (
+                    room.players.length === 0
+                ) {
+
+                    delete rooms[roomId];
+
+                    console.log(
+                        `Room ${roomId} deleted`
+                    );
+                }
             }
-        });
+        );
+
     });
 };
 
-module.exports = setupGameSocket;
+
+module.exports =
+    setupGameSocket;
