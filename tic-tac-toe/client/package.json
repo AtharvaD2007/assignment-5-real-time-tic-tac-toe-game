@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "start": "vite"
+    "start": "vite",
+     "build": "vite"
   },
   "dependencies": {
     "react": "^19.1.1",
