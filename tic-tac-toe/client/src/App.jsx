@@ -9,160 +9,199 @@ import "./App.css";
 
 function App() {
 
-    const [username, setUsername] = useState("");
-    const [roomId, setRoomId] = useState("");
-    const [joined, setJoined] = useState(false);
+    const [username, setUsername] =
+        useState("");
 
-    const [symbol, setSymbol] = useState("");
+    const [roomId, setRoomId] =
+        useState("");
 
-    const [board, setBoard] = useState([
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        ""
-    ]);
+    const [joined, setJoined] =
+        useState(false);
 
-    const [currentPlayer, setCurrentPlayer] = useState("X");
+    const [symbol, setSymbol] =
+        useState("");
 
-    const [players, setPlayers] = useState([]);
+    const [board, setBoard] =
+        useState([
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            ""
+        ]);
 
-    const [winner, setWinner] = useState(null);
+    const [currentPlayer, setCurrentPlayer] =
+        useState("X");
 
-    const [result, setResult] = useState("playing");
+    const [players, setPlayers] =
+        useState([]);
 
-    const [message, setMessage] = useState("");
+    const [winner, setWinner] =
+        useState(null);
 
+    const [result, setResult] =
+        useState("playing");
+
+    const [message, setMessage] =
+        useState("");
+
+
+    // =========================
+    // SOCKET EVENTS
+    // =========================
 
     useEffect(() => {
-        const handleConnect = () => {
-            console.log("Connected to server:", socket.id);
 
-            const savedSession =
-                sessionStorage.getItem("ticTacToeSession");
-
-            if (savedSession) {
-
-                const session =
-                    JSON.parse(savedSession);
+        const handlePlayerAssigned =
+            (data) => {
 
                 console.log(
-                    "Rejoining room:",
-                    session
+                    "Player assigned:",
+                    data
                 );
 
-                socket.emit(
-                    "joinGame",
-                    {
+                setUsername(
+                    data.username
+                );
+
+                setRoomId(
+                    data.roomId
+                );
+
+                setSymbol(
+                    data.symbol
+                );
+
+                setJoined(true);
+
+                setMessage("");
+
+                // Save session
+                sessionStorage.setItem(
+                    "ticTacToeSession",
+                    JSON.stringify({
                         username:
-                            session.username,
+                            data.username,
 
                         roomId:
-                            session.roomId
-                    }
+                            data.roomId
+                    })
                 );
-            }
-        };
-
-        // Player assigned
-        const handlePlayerAssigned = (data) => {
-
-            console.log(
-                "Player assigned:",
-                data
-            );
-
-            setSymbol(data.symbol);
-            setUsername(data.username);
-            setRoomId(data.roomId);
-            setJoined(true);
-            setMessage("");
-
-            sessionStorage.setItem(
-                "ticTacToeSession",
-                JSON.stringify({
-                    username:
-                        data.username,
-
-                    roomId:
-                        data.roomId
-                })
-            );
-        };
-
-        // Game update
-        const handleGameUpdate = (data) => {
-
-            console.log("Game update:", data);
-
-            setBoard(data.board);
-
-            setCurrentPlayer(data.currentPlayer);
-
-            setWinner(data.winner);
-
-            setResult(data.result);
-
-            setPlayers(data.players);
-        };
+            };
 
 
-        // Room full
-        const handleRoomFull = () => {
+        const handleGameUpdate =
+            (data) => {
 
-            setMessage(
-                "This room is full. Only 2 players are allowed."
-            );
-        };
+                console.log(
+                    "Game update:",
+                    data
+                );
 
+                setBoard(
+                    data.board
+                );
 
-        // Join error
-        const handleJoinError = (data) => {
+                setCurrentPlayer(
+                    data.currentPlayer
+                );
 
-            console.log("Join error:", data);
+                setWinner(
+                    data.winner
+                );
 
-            setMessage(data.message);
-        };
+                setResult(
+                    data.result
+                );
 
-
-        // Game message
-        const handleGameMessage = (data) => {
-
-            console.log("Game message:", data);
-
-            setMessage(data.message);
-        };
-
-
-        // Player left
-        const handlePlayerLeft = (data) => {
-
-            console.log("Player left:", data);
-
-            setMessage(data.message);
-
-            setPlayers([]);
-        };
+                setPlayers(
+                    data.players
+                );
+            };
 
 
-        // Socket connected
+        const handleRoomFull =
+            () => {
+
+                setMessage(
+                    "This room is full. Only 2 players are allowed."
+                );
+            };
 
 
+        const handleJoinError =
+            (data) => {
 
-        // Socket disconnected
-        const handleDisconnect = () => {
+                setMessage(
+                    data.message
+                );
+            };
 
-            console.log(
-                "Disconnected from server"
-            );
 
-            setMessage(
-                "Connection lost. Reconnecting..."
-            );
-        };
+        const handleGameMessage =
+            (data) => {
+
+                setMessage(
+                    data.message
+                );
+            };
+
+
+        const handleConnect =
+            () => {
+
+                console.log(
+                    "Connected:",
+                    socket.id
+                );
+
+                const savedSession =
+                    sessionStorage.getItem(
+                        "ticTacToeSession"
+                    );
+
+                if (savedSession) {
+
+                    const session =
+                        JSON.parse(
+                            savedSession
+                        );
+
+                    console.log(
+                        "Rejoining:",
+                        session
+                    );
+
+                    socket.emit(
+                        "joinGame",
+                        {
+                            username:
+                                session.username,
+
+                            roomId:
+                                session.roomId
+                        }
+                    );
+                }
+            };
+
+
+        const handleDisconnect =
+            () => {
+
+                console.log(
+                    "Socket disconnected"
+                );
+
+                setMessage(
+                    "Connection lost. Reconnecting..."
+                );
+            };
+
 
         socket.on(
             "playerAssigned",
@@ -187,11 +226,6 @@ function App() {
         socket.on(
             "gameMessage",
             handleGameMessage
-        );
-
-        socket.on(
-            "playerLeft",
-            handlePlayerLeft
         );
 
         socket.on(
@@ -233,11 +267,6 @@ function App() {
             );
 
             socket.off(
-                "playerLeft",
-                handlePlayerLeft
-            );
-
-            socket.off(
                 "connect",
                 handleConnect
             );
@@ -251,6 +280,10 @@ function App() {
     }, []);
 
 
+    // =========================
+    // JOIN GAME
+    // =========================
+
     const joinGame = (event) => {
 
         event.preventDefault();
@@ -260,7 +293,6 @@ function App() {
 
         const cleanRoomId =
             roomId.trim();
-
 
         if (
             !cleanUsername ||
@@ -274,37 +306,41 @@ function App() {
             return;
         }
 
-
         setMessage("");
-
 
         socket.emit(
             "joinGame",
             {
-                username: cleanUsername,
-                roomId: cleanRoomId
+                username:
+                    cleanUsername,
+
+                roomId:
+                    cleanRoomId
             }
         );
     };
 
 
+    // =========================
+    // MAKE MOVE
+    // =========================
+
     const makeMove = (index) => {
 
         console.log(
-            "Trying to make move:",
+            "Click:",
             {
                 index,
+                username,
                 symbol,
                 currentPlayer,
                 roomId
             }
         );
 
-
         if (!joined) {
             return;
         }
-
 
         if (players.length < 2) {
 
@@ -315,18 +351,17 @@ function App() {
             return;
         }
 
-
         if (winner) {
             return;
         }
-
 
         if (result === "draw") {
             return;
         }
 
-
-        if (currentPlayer !== symbol) {
+        if (
+            currentPlayer !== symbol
+        ) {
 
             setMessage(
                 "It's not your turn"
@@ -335,8 +370,9 @@ function App() {
             return;
         }
 
-
-        if (board[index] !== "") {
+        if (
+            board[index] !== ""
+        ) {
 
             setMessage(
                 "This cell is already occupied"
@@ -345,34 +381,48 @@ function App() {
             return;
         }
 
-
         setMessage("");
 
+        console.log(
+            "Sending move:",
+            index
+        );
 
         socket.emit(
             "makeMove",
             {
-                roomId: roomId,
-                index: index
+                roomId:
+                    roomId,
+
+                index:
+                    index
             }
         );
     };
 
 
+    // =========================
+    // LEAVE GAME
+    // =========================
+
     const resetPage = () => {
 
-    sessionStorage.removeItem(
-        "ticTacToeSession"
-    );
+        sessionStorage.removeItem(
+            "ticTacToeSession"
+        );
 
-    window.location.reload();
-};
+        window.location.reload();
+    };
 
 
+    // =========================
     // JOIN SCREEN
+    // =========================
+
     if (!joined) {
 
         return (
+
             <div className="app">
 
                 <div className="join-card">
@@ -384,7 +434,6 @@ function App() {
                     <p>
                         Multiplayer Online Game
                     </p>
-
 
                     <form
                         onSubmit={joinGame}
@@ -402,7 +451,6 @@ function App() {
                             maxLength={20}
                         />
 
-
                         <input
                             type="text"
                             placeholder="Enter Room ID"
@@ -415,22 +463,19 @@ function App() {
                             maxLength={30}
                         />
 
-
-                        <button
-                            type="submit"
-                        >
+                        <button type="submit">
                             Join Game
                         </button>
 
                     </form>
 
-
                     {message && (
+
                         <p className="error">
                             {message}
                         </p>
-                    )}
 
+                    )}
 
                     <div className="instructions">
 
@@ -455,8 +500,12 @@ function App() {
     }
 
 
+    // =========================
     // GAME SCREEN
+    // =========================
+
     return (
+
         <div className="app">
 
             <div className="game-container">
@@ -465,41 +514,46 @@ function App() {
                     🎮 Tic Tac Toe
                 </h1>
 
-
                 <GameInfo
                     username={username}
                     symbol={symbol}
                     roomId={roomId}
-                    currentPlayer={currentPlayer}
+                    currentPlayer={
+                        currentPlayer
+                    }
                     players={players}
                     winner={winner}
                     result={result}
                 />
 
-
                 <Board
                     board={board}
-                    onCellClick={makeMove}
+                    onCellClick={
+                        makeMove
+                    }
                 />
 
-
                 {message && (
+
                     <p className="game-message">
                         {message}
                     </p>
-                )}
 
+                )}
 
                 {(winner ||
                     result === "draw") && (
 
-                        <button
-                            className="new-game-button"
-                            onClick={resetPage}
-                        >
-                            Leave Game
-                        </button>
-                    )}
+                    <button
+                        className="new-game-button"
+                        onClick={
+                            resetPage
+                        }
+                    >
+                        Leave Game
+                    </button>
+
+                )}
 
             </div>
 
