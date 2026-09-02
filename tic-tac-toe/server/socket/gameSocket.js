@@ -384,6 +384,15 @@ const setupGameSocket = (io) => {
 
 
                 // Check whose turn
+                console.log("MOVE DEBUG:", {
+                    socketId: socket.id,
+                    username: player.username,
+                    playerSymbol: player.symbol,
+                    currentPlayer: room.currentPlayer,
+                    roomId: roomId,
+                    index: index
+                });
+
                 if (
                     room.currentPlayer !==
                     player.symbol
