@@ -6,11 +6,8 @@ const dotenv = require("dotenv");
 const { Server } = require("socket.io");
 
 const connectDB = require("./config/db");
-
 const gameRoutes = require("./routes/gameRoutes");
-
-const setupGameSocket =
-    require("./socket/gameSocket");
+const setupGameSocket = require("./socket/gameSocket");
 
 dotenv.config();
 
@@ -19,41 +16,92 @@ const app = express();
 const server =
     http.createServer(app);
 
-const io = new Server(server, {
-    cors: {
-        origin: "*",
-        methods: ["GET", "POST"]
+// ==========================================
+// SOCKET.IO
+// ==========================================
+
+const io = new Server(
+    server,
+    {
+        cors: {
+            origin: "*",
+            methods: ["GET", "POST"]
+        }
     }
-});
+);
 
-app.use(cors());
+// ==========================================
+// MIDDLEWARE
+// ==========================================
 
-app.use(express.json());
+app.use(
+    cors()
+);
 
+app.use(
+    express.json()
+);
 
-connectDB();
+// ==========================================
+// ROUTES
+// ==========================================
 
+app.get(
+    "/",
+    (req, res) => {
+        res.json({
+            message:
+                "Tic Tac Toe Server Running"
+        });
+    }
+);
 
 app.use(
     "/api/games",
     gameRoutes
 );
 
-
-app.get("/", (req, res) => {
-
-    res.json({
-        message:
-            "Tic Tac Toe Server Running"
-    });
-});
-
+// ==========================================
+// SOCKET GAME
+// ==========================================
 
 setupGameSocket(io);
 
+// ==========================================
+// START SERVER
+// ==========================================
 
 const PORT =
     process.env.PORT || 4000;
-server.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on port ${PORT}`);
-});
+
+const startServer =
+    async () => {
+
+        try {
+
+            await connectDB();
+
+            server.listen(
+                PORT,
+                "0.0.0.0",
+                () => {
+
+                    console.log(
+                        `Server running on port ${PORT}`
+                    );
+
+                }
+            );
+
+        } catch (error) {
+
+            console.log(
+                "Failed to start server:",
+                error.message
+            );
+
+            process.exit(1);
+        }
+    };
+
+startServer();

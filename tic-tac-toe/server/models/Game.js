@@ -4,7 +4,8 @@ const gameSchema = new mongoose.Schema(
     {
         roomId: {
             type: String,
-            required: true
+            required: true,
+            index: true
         },
 
         playerX: {
@@ -14,33 +15,30 @@ const gameSchema = new mongoose.Schema(
 
         playerO: {
             type: String,
-            required: true
+            default: null
         },
 
         board: {
             type: [String],
-            default: [
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                "",
-                ""
-            ]
+            default: ["", "", "", "", "", "", "", ""]
+        },
+
+        currentPlayer: {
+            type: String,
+            enum: ["X", "O"],
+            default: "X"
         },
 
         winner: {
             type: String,
+            enum: ["X", "O", null],
             default: null
         },
 
         result: {
             type: String,
-            enum: ["winner", "draw"],
-            required: true
+            enum: ["playing", "winner", "draw"],
+            default: "playing"
         }
     },
     {
