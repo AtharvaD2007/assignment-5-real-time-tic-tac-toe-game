@@ -14,9 +14,7 @@ const winningCombinations = [
 ];
 
 const checkWinner = (board) => {
-
     for (const combination of winningCombinations) {
-
         const [a, b, c] = combination;
 
         if (
@@ -31,19 +29,12 @@ const checkWinner = (board) => {
     return null;
 };
 
-
 const checkDraw = (board) => {
-
-    return board.every(
-        (cell) => cell !== ""
-    );
+    return board.every((cell) => cell !== "");
 };
 
-
 const saveGame = async (roomId, room) => {
-
     try {
-
         const playerX = room.players.find(
             (player) => player.symbol === "X"
         );
@@ -57,37 +48,23 @@ const saveGame = async (roomId, room) => {
         }
 
         await Game.create({
-
             roomId: roomId,
-
             playerX: playerX.username,
-
             playerO: playerO.username,
-
             board: room.board,
-
-            winner: room.winner
-                ? room.winner
-                : null,
-
-            result: room.winner
-                ? "winner"
-                : "draw"
+            winner: room.winner ? room.winner : null,
+            result: room.winner ? "winner" : "draw"
         });
 
-        console.log(
-            "Game saved to MongoDB"
-        );
+        console.log("Game saved to MongoDB");
 
     } catch (error) {
-
         console.log(
             "Error saving game:",
             error.message
         );
     }
 };
-
 
 const sendGameUpdate = (
     io,
@@ -117,13 +94,15 @@ const sendGameUpdate = (
                             player.username,
 
                         symbol:
-                            player.symbol
+                            player.symbol,
+
+                        connected:
+                            player.connected
                     })
                 )
         }
     );
 };
-
 
 const setupGameSocket = (io) => {
 
@@ -134,9 +113,8 @@ const setupGameSocket = (io) => {
             socket.id
         );
 
-
         // =========================
-        // JOIN GAME
+        // JOIN / REJOIN GAME
         // =========================
 
         socket.on(
@@ -156,13 +134,11 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
-
                 const cleanRoomId =
                     roomId.trim();
 
                 const cleanUsername =
                     username.trim();
-
 
                 if (
                     !cleanRoomId ||
@@ -180,8 +156,7 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
-
-                // Create room if it doesn't exist
+                // Create room
                 if (!rooms[cleanRoomId]) {
 
                     rooms[cleanRoomId] = {
@@ -189,6 +164,7 @@ const setupGameSocket = (io) => {
                         players: [],
 
                         board: [
+                            "",
                             "",
                             "",
                             "",
@@ -205,12 +181,76 @@ const setupGameSocket = (io) => {
                     };
                 }
 
-
                 const room =
                     rooms[cleanRoomId];
 
+                // =========================
+                // CHECK FOR RECONNECTION
+                // =========================
 
-                // Maximum 2 players
+                const existingPlayer =
+                    room.players.find(
+                        (player) =>
+                            player.username
+                                .toLowerCase() ===
+                            cleanUsername
+                                .toLowerCase()
+                    );
+
+                if (existingPlayer) {
+
+                    // Update socket ID
+                    existingPlayer.socketId =
+                        socket.id;
+
+                    existingPlayer.connected =
+                        true;
+
+                    socket.join(cleanRoomId);
+
+                    socket.roomId =
+                        cleanRoomId;
+
+                    socket.username =
+                        existingPlayer.username;
+
+                    socket.symbol =
+                        existingPlayer.symbol;
+
+                    console.log(
+                        `${cleanUsername} reconnected as ${existingPlayer.symbol}`
+                    );
+
+                    socket.emit(
+                        "playerAssigned",
+                        {
+                            username:
+                                existingPlayer.username,
+
+                            symbol:
+                                existingPlayer.symbol,
+
+                            roomId:
+                                cleanRoomId
+                        }
+                    );
+
+                    sendGameUpdate(
+                        io,
+                        cleanRoomId,
+                        room,
+                        room.winner
+                            ? "winner"
+                            : "playing"
+                    );
+
+                    return;
+                }
+
+                // =========================
+                // MAX 2 PLAYERS
+                // =========================
+
                 if (
                     room.players.length >= 2
                 ) {
@@ -222,39 +262,14 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
+                // =========================
+                // ASSIGN SYMBOL
+                // =========================
 
-                // Check duplicate username
-                const usernameExists =
-                    room.players.some(
-                        (player) =>
-                            player.username
-                                .toLowerCase() ===
-                            cleanUsername
-                                .toLowerCase()
-                    );
-
-
-                if (usernameExists) {
-
-                    socket.emit(
-                        "joinError",
-                        {
-                            message:
-                                "Username is already taken in this room"
-                        }
-                    );
-
-                    return;
-                }
-
-
-                // Assign X to first player
-                // Assign O to second player
                 const symbol =
                     room.players.length === 0
                         ? "X"
                         : "O";
-
 
                 const player = {
 
@@ -265,21 +280,20 @@ const setupGameSocket = (io) => {
                         cleanUsername,
 
                     symbol:
-                        symbol
-                };
+                        symbol,
 
+                    connected:
+                        true
+                };
 
                 room.players.push(
                     player
                 );
 
-
                 socket.join(
                     cleanRoomId
                 );
 
-
-                // Store room information
                 socket.roomId =
                     cleanRoomId;
 
@@ -288,7 +302,6 @@ const setupGameSocket = (io) => {
 
                 socket.symbol =
                     symbol;
-
 
                 socket.emit(
                     "playerAssigned",
@@ -304,7 +317,6 @@ const setupGameSocket = (io) => {
                     }
                 );
 
-
                 sendGameUpdate(
                     io,
                     cleanRoomId,
@@ -312,13 +324,11 @@ const setupGameSocket = (io) => {
                     "playing"
                 );
 
-
                 console.log(
                     `${cleanUsername} joined room ${cleanRoomId} as ${symbol}`
                 );
             }
         );
-
 
         // =========================
         // MAKE MOVE
@@ -331,20 +341,17 @@ const setupGameSocket = (io) => {
                 const room =
                     rooms[roomId];
 
-
                 if (!room) {
                     return;
                 }
 
-
-                // Find player from room
+                // Find player using socket ID
                 const player =
                     room.players.find(
                         (p) =>
                             p.socketId ===
                             socket.id
                     );
-
 
                 if (!player) {
 
@@ -359,10 +366,28 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
+                // Player must be connected
+                if (!player.connected) {
+
+                    socket.emit(
+                        "gameMessage",
+                        {
+                            message:
+                                "Connection lost. Reconnecting..."
+                        }
+                    );
+
+                    return;
+                }
 
                 // Need two players
+                const connectedPlayers =
+                    room.players.filter(
+                        (p) => p.connected
+                    );
+
                 if (
-                    room.players.length < 2
+                    connectedPlayers.length < 2
                 ) {
 
                     socket.emit(
@@ -376,27 +401,30 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
-
                 // Game already won
                 if (room.winner) {
                     return;
                 }
 
-
-                // Check whose turn
-                console.log("MOVE DEBUG:", {
-                    socketId: socket.id,
-                    username: player.username,
-                    playerSymbol: player.symbol,
-                    currentPlayer: room.currentPlayer,
-                    roomId: roomId,
-                    index: index
-                });
-
+                // Check turn
                 if (
                     room.currentPlayer !==
                     player.symbol
                 ) {
+
+                    console.log(
+                        "Wrong turn:",
+                        {
+                            username:
+                                player.username,
+
+                            playerSymbol:
+                                player.symbol,
+
+                            currentPlayer:
+                                room.currentPlayer
+                        }
+                    );
 
                     socket.emit(
                         "gameMessage",
@@ -409,7 +437,6 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
-
                 // Validate index
                 if (
                     index < 0 ||
@@ -419,11 +446,13 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
-
                 // Make move
                 room.board[index] =
                     player.symbol;
 
+                console.log(
+                    `${player.username} placed ${player.symbol} at ${index}`
+                );
 
                 // Check winner
                 const winner =
@@ -431,18 +460,19 @@ const setupGameSocket = (io) => {
                         room.board
                     );
 
-
                 if (winner) {
 
                     room.winner =
                         winner;
 
+                    console.log(
+                        `Winner: ${winner}`
+                    );
 
                     await saveGame(
                         roomId,
                         room
                     );
-
 
                     sendGameUpdate(
                         io,
@@ -453,7 +483,6 @@ const setupGameSocket = (io) => {
 
                     return;
                 }
-
 
                 // Check draw
                 if (
@@ -467,7 +496,6 @@ const setupGameSocket = (io) => {
                         room
                     );
 
-
                     sendGameUpdate(
                         io,
                         roomId,
@@ -478,13 +506,11 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
-
                 // Change turn
                 room.currentPlayer =
                     room.currentPlayer === "X"
                         ? "O"
                         : "X";
-
 
                 sendGameUpdate(
                     io,
@@ -494,7 +520,6 @@ const setupGameSocket = (io) => {
                 );
             }
         );
-
 
         // =========================
         // DISCONNECT
@@ -509,10 +534,8 @@ const setupGameSocket = (io) => {
                     socket.id
                 );
 
-
                 const roomId =
                     socket.roomId;
-
 
                 if (
                     !roomId ||
@@ -521,46 +544,50 @@ const setupGameSocket = (io) => {
                     return;
                 }
 
-
                 const room =
                     rooms[roomId];
 
-
-                // Remove player
-                room.players =
-                    room.players.filter(
-                        (player) =>
-                            player.socketId !==
+                // Find the exact player
+                const player =
+                    room.players.find(
+                        (p) =>
+                            p.socketId ===
                             socket.id
                     );
 
+                if (!player) {
+                    return;
+                }
+
+                // DO NOT DELETE THE PLAYER
+                // Keep them so they can reconnect
+                player.connected =
+                    false;
+
+                console.log(
+                    `${player.username} disconnected`
+                );
 
                 io.to(roomId).emit(
-                    "playerLeft",
+                    "gameMessage",
                     {
                         message:
-                            `${socket.username || "A player"} left the game`
+                            `${player.username} disconnected. Waiting for reconnection...`
                     }
                 );
 
-
-                // Delete empty room
-                if (
-                    room.players.length === 0
-                ) {
-
-                    delete rooms[roomId];
-
-                    console.log(
-                        `Room ${roomId} deleted`
-                    );
-                }
+                sendGameUpdate(
+                    io,
+                    roomId,
+                    room,
+                    room.winner
+                        ? "winner"
+                        : "playing"
+                );
             }
         );
-
     });
 };
-
 
 module.exports =
     setupGameSocket;

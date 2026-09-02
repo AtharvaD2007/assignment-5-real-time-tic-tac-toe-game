@@ -38,19 +38,60 @@ function App() {
 
 
     useEffect(() => {
+        const handleConnect = () => {
+            console.log("Connected to server:", socket.id);
+
+            const savedSession =
+                sessionStorage.getItem("ticTacToeSession");
+
+            if (savedSession) {
+
+                const session =
+                    JSON.parse(savedSession);
+
+                console.log(
+                    "Rejoining room:",
+                    session
+                );
+
+                socket.emit(
+                    "joinGame",
+                    {
+                        username:
+                            session.username,
+
+                        roomId:
+                            session.roomId
+                    }
+                );
+            }
+        };
 
         // Player assigned
         const handlePlayerAssigned = (data) => {
 
-            console.log("Player assigned:", data);
+            console.log(
+                "Player assigned:",
+                data
+            );
 
             setSymbol(data.symbol);
             setUsername(data.username);
             setRoomId(data.roomId);
             setJoined(true);
             setMessage("");
-        };
 
+            sessionStorage.setItem(
+                "ticTacToeSession",
+                JSON.stringify({
+                    username:
+                        data.username,
+
+                    roomId:
+                        data.roomId
+                })
+            );
+        };
 
         // Game update
         const handleGameUpdate = (data) => {
@@ -108,25 +149,20 @@ function App() {
 
 
         // Socket connected
-        const handleConnect = () => {
 
-            console.log(
-                "Connected to server:",
-                socket.id
-            );
-        };
 
 
         // Socket disconnected
         const handleDisconnect = () => {
 
-            console.log("Disconnected from server");
+            console.log(
+                "Disconnected from server"
+            );
 
             setMessage(
                 "Connection lost. Reconnecting..."
             );
         };
-
 
         socket.on(
             "playerAssigned",
@@ -325,8 +361,12 @@ function App() {
 
     const resetPage = () => {
 
-        window.location.reload();
-    };
+    sessionStorage.removeItem(
+        "ticTacToeSession"
+    );
+
+    window.location.reload();
+};
 
 
     // JOIN SCREEN
@@ -453,13 +493,13 @@ function App() {
                 {(winner ||
                     result === "draw") && (
 
-                    <button
-                        className="new-game-button"
-                        onClick={resetPage}
-                    >
-                        Leave Game
-                    </button>
-                )}
+                        <button
+                            className="new-game-button"
+                            onClick={resetPage}
+                        >
+                            Leave Game
+                        </button>
+                    )}
 
             </div>
 
