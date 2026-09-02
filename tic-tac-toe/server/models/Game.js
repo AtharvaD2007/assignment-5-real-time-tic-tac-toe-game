@@ -20,7 +20,7 @@ const gameSchema = new mongoose.Schema(
 
         board: {
             type: [String],
-            default: ["", "", "", "", "", "", "", ""]
+            default: ["", "", "", "", "", "", "", "",""]
         },
 
         currentPlayer: {
