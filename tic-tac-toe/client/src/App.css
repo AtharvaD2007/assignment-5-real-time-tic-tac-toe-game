@@ -168,34 +168,29 @@ input {
 
 .board {
     width: 330px;
-
     height: 330px;
-
     margin: 20px auto;
 
     display: grid;
 
-    grid-template-columns:
-        repeat(3, 1fr);
-
-    grid-template-rows:
-        repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: repeat(3, 1fr);
 
     gap: 8px;
 }
-
 .cell {
     border: 2px solid #222;
-
     border-radius: 8px;
-
     background: #fafafa;
 
     font-size: 45px;
-
     font-weight: bold;
 
     cursor: pointer;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .cell:hover {
@@ -231,6 +226,26 @@ input {
     .board {
         width: 280px;
 
+        height: 280px;
+    }
+
+    .cell {
+        font-size: 35px;
+    }
+}
+@media (max-width: 500px) {
+
+    .game-container {
+        width: 100%;
+        padding: 20px;
+    }
+
+    .join-card {
+        width: 100%;
+    }
+
+    .board {
+        width: 280px;
         height: 280px;
     }
 

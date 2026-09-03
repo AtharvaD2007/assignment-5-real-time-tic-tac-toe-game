@@ -1,27 +1,15 @@
 import Cell from "./Cell";
 
-const Board = ({
-    board,
-    onCellClick
-}) => {
-
+const Board = ({ board, onCellClick }) => {
     return (
         <div className="board">
-
-            {board.map(
-                (value, index) => (
-
-                    <Cell
-                        key={index}
-                        value={value}
-                        onClick={() =>
-                            onCellClick(index)
-                        }
-                    />
-
-                )
-            )}
-
+            {Array.from({ length: 9 }, (_, index) => (
+                <Cell
+                    key={index}
+                    value={board[index] || ""}
+                    onClick={() => onCellClick(index)}
+                />
+            ))}
         </div>
     );
 };
